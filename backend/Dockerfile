@@ -6,13 +6,10 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# Copy all files
+# Copy all backend files
 COPY . .
 
-# Build if needed
-RUN npm run build
-
-# Generate Prisma client
+# Generate Prisma client (instead of build)
 RUN npx prisma generate
 
 # Stage 2: Python setup
