@@ -2,23 +2,25 @@ module.exports = {
     apps: [
       {
         name: "node-app",
-        cwd: "/app/node",
-        script: "node",
-        args: "server.js",
+        script: "server.js",
+        cwd: "/app",
         watch: true,
         env: {
           NODE_ENV: "production",
-          PORT: 3000
+          PORT: 3000,
+          DATABASE_URL: "postgres://procguser:procgpassword@postgres:5432/procgdb",
+          REDIS_URL: "redis://valkey:6379"
         }
       },
       {
         name: "flask-app",
-        cwd: "/app",
         script: "python",
         args: "app.py",
+        cwd: "/app",
         watch: true,
         env: {
           FLASK_ENV: "production",
+          FLASK_APP: "app.py",
           FLASK_RUN_PORT: 5000
         }
       }

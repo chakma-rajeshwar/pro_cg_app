@@ -13,6 +13,7 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./backend/prisma:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U procguser -d procgdb"]
       interval: 5s
@@ -45,13 +46,17 @@ services:
       REDIS_URL: redis://valkey:6379
       NODE_ENV: production
       FLASK_ENV: production
+      FLASK_APP: app.py
+      SOCKET_PORT: 3001
     ports:
-      - "3000:3000"  # Node.js
+      - "3000:3000"  # Node.js HTTP
       - "5000:5000"  # Flask
+      - "3001:3001"  # Socket.IO
     volumes:
       - ./backend:/app
       - ./backend/uploads:/app/uploads
       - /app/node_modules
+      - /app/prisma
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
       interval: 10s
@@ -68,6 +73,7 @@ services:
       NODE_ENV: production
       VITE_API_URL: /api
       VITE_FLASK_URL: /flask-api
+      VITE_SOCKET_URL: /socket.io
     ports:
       - "8000:80"
     volumes:
@@ -88,8 +94,10 @@ services:
       - frontend
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./pro_cg_web/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost"]
       interval: 30s
