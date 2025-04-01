@@ -1,0 +1,98 @@
+version: '3.8'
+
+services:
+  postgres:
+    build: ./postgres
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_DB: procgdb
+      POSTGRES_USER: procguser
+      POSTGRES_PASSWORD: procgpassword
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U procguser -d procgdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  valkey:
+    build: ./valkey
+    container_name: valkey
+    restart: always
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./backend
+    container_name: backend
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://procguser:procgpassword@postgres:5432/procgdb
+      REDIS_URL: redis://valkey:6379
+      NODE_ENV: production
+      FLASK_ENV: production
+    ports:
+      - "3000:3000"  # Node.js
+      - "5000:5000"  # Flask
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    restart: always
+    depends_on:
+      - backend
+    environment:
+      NODE_ENV: production
+    ports:
+      - "8000:80"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - /app/node_modules
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  nginx:
+    build: ./pro_cg_web
+    container_name: nginx
+    restart: always
+    depends_on:
+      - backend
+      - frontend
+    ports:
+      - "80:80"
+    volumes:
+      - ./pro_cg_web/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  pgdata:
