@@ -6,7 +6,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# Copy all files except those in .dockerignore
+# Copy all files
 COPY . .
 
 # Build if needed
